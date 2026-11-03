@@ -15,15 +15,51 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Fix Directory Structure
+      - name: Create Clean Project
         run: |
-          mkdir -p main_project/app
-          find . -name "build.gradle" -exec cp {} main_project/app/build.gradle \; || true
-          find . -name "settings.gradle" -exec cp {} main_project/settings.gradle \; || true
           mkdir -p main_project/app/src/main/java/com/cleanyourtv/launcher
-          find . -name "MainActivity.java" -exec cp {} main_project/app/src/main/java/com/cleanyourtv/launcher/MainActivity.java \; || true
-          mkdir -p main_project/app/src/main
-          find . -name "AndroidManifest.xml" -exec cp {} main_project/app/src/main/AndroidManifest.xml \; || true
+          
+          # Wir suchen die hochgeladene MainActivity.java und kopieren sie an die richtige Stelle
+          find . -name "MainActivity.java" -exec cp {} main_project/app/src/main/java/com/cleanyourtv/launcher/MainActivity.java \;
+          
+          # Wir schreiben die Konfigurationsdateien direkt frisch und fehlerfrei rein
+          cat << 'EOF' > main_project/settings.gradle
+          rootProject.name = "NokiaLauncher"
+          include ':app'
+          EOF
+
+          cat << 'EOF' > main_project/app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.cleanyourtv.launcher'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.cleanyourtv.launcher"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          EOF
+
+          cat << 'EOF' > main_project/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://android.com" package="com.cleanyourtv.launcher">
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+              <application android:label="CleanYourTV Launcher" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleInstance">
+                      <intent-filter android:priority="2">
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.HOME" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # Gradle Wrapper anlegen
           cd main_project
           gradle wrapper --gradle-version 8.2
 
