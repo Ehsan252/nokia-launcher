@@ -1,0 +1,39 @@
+name: Build Android TV Launcher
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Fix Directory Structure
+        run: |
+          mkdir -p main_project/app
+          find . -name "build.gradle" -exec cp {} main_project/app/build.gradle \; || true
+          find . -name "settings.gradle" -exec cp {} main_project/settings.gradle \; || true
+          mkdir -p main_project/app/src/main/java/com/cleanyourtv/launcher
+          find . -name "MainActivity.java" -exec cp {} main_project/app/src/main/java/com/cleanyourtv/launcher/MainActivity.java \; || true
+          mkdir -p main_project/app/src/main
+          find . -name "AndroidManifest.xml" -exec cp {} main_project/app/src/main/AndroidManifest.xml \; || true
+          cd main_project
+          gradle wrapper --gradle-version 8.2
+
+      - name: Build Debug APK
+        run: |
+          cd main_project
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: launcher-apk
+          path: main_project/app/build/outputs/apk/debug/app-debug.apk
